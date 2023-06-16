@@ -1,0 +1,51 @@
+class Main {
+    function void main() {
+        var Game game;
+        var int seed;
+        var String display;
+
+        do Main.display_menu();
+        //do Output.printString("Press any key to start");
+    
+        let seed = 0;
+        while (Keyboard.keyPressed() = 0) {
+            let seed = seed + 1;
+        }
+
+        do Random.setSeed(seed);
+
+        do Screen.clearScreen();
+        
+        let game = Game.new();
+        let display = game.start();
+
+        do Output.printString(display);     // the game ends, display the returned string
+
+        // dispose the game
+        do game.dispose();
+
+        return;
+   }
+
+    function void display_menu(){
+        // display instructions
+       
+        do Output.println();
+        do Output.printString("During the game: ");
+        do Output.println();
+        do Output.printString("Press E to exit the game");
+        do Output.println();
+        do Output.printString("Press left/right arrow key to move the falcon");
+        do Output.println();
+        do Output.printString("Press space key to fire a bullet");
+        do Output.println();
+        do Output.println();
+        do Output.printString("Aliens will fire randomly. If you get hit or aliens arrive at the bottom of the screen, you lose. If you clear all the aliens, you win.");
+
+        do Output.println();
+        do Output.println();
+
+        do Output.printString("Press any key to start");
+        return;
+    }
+}

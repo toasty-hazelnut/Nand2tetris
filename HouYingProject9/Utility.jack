@@ -1,0 +1,11 @@
+class Utility {
+    function void set_0 (Array arr, int len) {
+        var int i;
+        let i = 0;
+        while(i<len){
+            let arr[i] = 0;
+            let i = i + 1;
+        }
+        return;
+    }
+}

@@ -1,0 +1,1 @@
+All the 15 chips work.

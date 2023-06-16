@@ -1,0 +1,243 @@
+class Alien {
+    field int x;                        // the alien lives in which square in the row, for out of screen checking purpose      
+    field int location;                 // the memory address of the square where the alien lives
+
+    static boolean need_move_down;      // if the aliens need to move down
+    static boolean need_set_move_down;  // if we need to set need_move_down to true     
+    static boolean move_right;          // if the aliens need to move right
+    static Array aliens;
+    static int len;         // length of the Array aliens
+    static int num;         // number of aliens alive
+
+    constructor Alien new(int i, int j) {
+        let x = i;
+        let location = Constant.STEP() * j + x;
+        return this;
+    }
+
+    method void draw(){
+        var int memAddress;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 384);
+        do Memory.poke(memAddress+32, 960);
+        do Memory.poke(memAddress+64, 2016);
+        do Memory.poke(memAddress+96, 4080);
+        do Memory.poke(memAddress+128, 6552);
+        do Memory.poke(memAddress+160, 14748);
+        do Memory.poke(memAddress+192, 16380);
+        do Memory.poke(memAddress+224, 16380);
+        do Memory.poke(memAddress+256, 16380);
+        do Memory.poke(memAddress+288, 26214);
+        do Memory.poke(memAddress+320, 26214);
+        do Memory.poke(memAddress+352, 26214);
+        do Memory.poke(memAddress+384, -6553);
+        do Memory.poke(memAddress+416, 0);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+
+    method boolean move() {
+        do remove();
+
+        if(need_move_down){
+            let location = location + Constant.STEP();
+            if(location > Constant.DOWN_LOC_BDY() ){
+                // the alien arrives at the bottom: lose
+                return true;
+            }
+        } else {
+            if(move_right){
+                let location = location + 1;
+                let x = x + 1;
+
+                if( x > (Constant.RIGHT_BDY()-1) ) {  // need to move down in the next move
+                    let need_set_move_down = true;
+                }
+            } else { // move left
+                let location = location - 1;
+                let x = x - 1;
+                if( x < 1 ) { // need to move down in the next move
+                    let need_set_move_down = true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    method void remove() {
+        var int memAddress;
+        let memAddress = 16384 + location;
+	    do Memory.poke(memAddress+0, 0);
+	    do Memory.poke(memAddress+32, 0);
+	    do Memory.poke(memAddress+64, 0);
+	    do Memory.poke(memAddress+96, 0);
+	    do Memory.poke(memAddress+128, 0);
+	    do Memory.poke(memAddress+160, 0);
+	    do Memory.poke(memAddress+192, 0);
+	    do Memory.poke(memAddress+224, 0);
+	    do Memory.poke(memAddress+256, 0);
+	    do Memory.poke(memAddress+288, 0);
+	    do Memory.poke(memAddress+320, 0);
+	    do Memory.poke(memAddress+352, 0);
+	    do Memory.poke(memAddress+384, -0);
+        return;
+    }
+
+    method void dispose() {
+        do remove();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method int get_loc(){
+        return location;
+    }
+
+    method void fire() {
+        var int r;
+        var int loc;
+
+        let r = Random.rand();
+        if((r & 111) = 0) {     // fire randomly
+            let loc = location + Constant.STEP();
+            if(loc < Constant.DOWN_LOC_BDY()){      // add enemy bullet
+                do Bullet.add_bullet(loc, true);
+            }
+        }
+
+        return;
+    }
+
+    function void dispose_all(){
+        var int i;
+        var Alien alien;
+
+        let i = 0;
+        while(i < len){
+            let alien = aliens[i];
+            if(~(alien=null)){      // dispose each alien
+                do alien.dispose();
+            }
+            let i = i + 1;
+        }
+
+        do aliens.dispose();
+        return;
+    }
+
+    function boolean move_group(){  // move all the aliens
+        var int i;
+        var Alien alien;
+        var boolean lose, ret;
+        let lose = false;
+
+        let i = 0;
+
+        while(i < len) { // set each alien's new position
+            let alien = aliens[i];
+            if(~(alien=null)){
+                let ret = alien.move();
+                if(ret) {
+                    let lose = ret;
+                }
+            }
+            let i = i + 1;
+        }
+
+        // draw each alien
+        let i = 0;
+        while(i<len){
+            let alien = aliens[i];
+            if(~(alien=null)){
+                do alien.draw();
+            }
+            let i = i +1;
+        }
+
+        if(need_set_move_down){
+            let need_move_down = true;
+        }
+
+        if(need_move_down){
+            if(need_set_move_down){     // if we already set need_move_down, then let need_set_move_down be false
+                let need_set_move_down = false;
+            } else {
+                let need_move_down = false; // reset the need to move down
+                let move_right = ~move_right; // switch horizontal direction
+            }
+        }
+
+        return lose;
+    }
+
+    function void init_alien_group(int row, int column){
+        var int x, y, i;
+        var Alien alien;
+
+        let len = row*column;
+        let num = len;
+        let aliens = Array.new(len);    // allocate an array to store aliens
+        
+        let y = 2;      // the aliens start at 2 squares (16-bit * 16-bit) from the top of the screen
+        let row = row + 2;
+        let i = 0;      // index of the alien in the array
+
+        while (y < row) {
+            let x = 0;
+            while (x < column) {
+                let aliens[i] = Alien.new(x, y);
+                let alien = aliens[i];
+                let x = x + 1;
+                let i = i + 1;
+            }
+
+            let y = y+1;
+        }
+
+        let need_move_down = false;
+        let move_right = true;
+        let need_set_move_down = false;
+        return ;
+    }
+
+    function void remove_ith(int i){        // remove the ith alien from the array
+        var Alien alien;
+        let alien = aliens[i];
+        if(~(alien=null)){
+            do alien.dispose();
+        }
+
+        let aliens[i] = null;
+        let num = num - 1;
+        return;
+    }
+
+    function void aliens_fire () {
+        var int i;
+        var Alien alien;
+
+        let i = 0;
+        let alien = aliens[i];
+
+        if(~(alien=null)){
+            do alien.fire();
+        }
+
+        return;
+    }
+
+    function int get_num(){
+        return num;
+    }
+
+    function int get_len(){
+        return len;
+    }
+
+    function Array get_aliens(){
+        return aliens;
+    }
+
+}

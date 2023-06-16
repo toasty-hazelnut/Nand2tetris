@@ -1,0 +1,75 @@
+class CheckCollision {
+    // check collisions between falcon and emeny's bullets
+    function boolean bullets_falcon(Falcon falcon) {
+        var int i, len;
+        var Array bullets;
+        var Bullet bullet;
+        var int falcon_loc, bullet_loc;
+
+        let bullets = Bullet.get_enemy_bullets();
+
+        let len = Bullet.get_enemy_len();
+        let i = 0;
+        let falcon_loc = falcon.get_loc();
+
+        while (i<len){
+            let bullet = bullets[i];
+            if(~(bullet = null)){
+                let bullet_loc = bullet.get_loc();    
+                
+                if( (bullet_loc=falcon_loc) | ( (bullet_loc+Constant.STEP()) = falcon_loc) ) {  // collide
+                    do Bullet.remove_ith(i, true);      // remove the bullet and end the game
+                    return true;
+                }
+            }
+            let i = i+1;
+        }
+
+        return false;
+    }
+
+    // check collisions between aliens and player's bullets
+    function void aliens_bullets(){
+        var int i, j, bullet_loc, alien_loc, bullets_len, aliens_len;
+        var Array bullets, aliens;
+        var Alien alien;
+        var Bullet bullet;
+        var boolean next;
+
+        let i = 0;
+        let j = 0;
+
+        let aliens_len = Alien.get_len();
+        let bullets_len = Bullet.get_mine_len();
+        let aliens = Alien.get_aliens();
+        let bullets = Bullet.get_my_bullets(); 
+
+        while(i < aliens_len){
+            let alien = aliens[i];
+            if(~(alien=null)){
+                let alien_loc = alien.get_loc();
+                let next = false;
+                let j = 0;
+
+                while( (j < bullets_len) & (~next) ) {
+                    let bullet = bullets[j];
+                    if(~(bullet=null)){   // 
+                        let bullet_loc = bullet.get_loc();
+
+                        if( (bullet_loc=alien_loc) | ( (bullet_loc - Constant.STEP()) = alien_loc) ) {  // collide
+                            do Bullet.remove_ith(j, false);     // remove the bullet and remove the alien
+                            do Alien.remove_ith(i);
+                            let next = true;
+                        }
+                    }
+
+                    let j = j+1;
+                }
+            }
+
+            let i = i+1;
+        }
+        return;
+    }
+
+}

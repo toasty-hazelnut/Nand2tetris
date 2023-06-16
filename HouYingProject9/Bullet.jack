@@ -1,0 +1,238 @@
+class Bullet {
+    field int location;
+    field boolean enemy;   // whether the bullet is from enemy or from the falcon
+
+    static Array enemy_bullets;
+    static Array my_bullets;
+    static int enemy_len;   // array length
+    static int enemy_num;   // actual number of bullets
+    static int mine_len;
+    static int mine_num;
+
+    constructor Bullet new(int loc, boolean is_enemy){
+        let location = loc;
+        let enemy = is_enemy;
+        return this;
+    }
+
+    method void draw() {
+        var int memAddress;
+        let memAddress = 16384+location;
+
+        if(enemy){  // draw enemy's bullet
+            do Memory.poke(memAddress+0, 0);
+	        do Memory.poke(memAddress+32, 0);
+	        do Memory.poke(memAddress+64, 0);
+	        do Memory.poke(memAddress+96, 960);
+	        do Memory.poke(memAddress+128, 960);
+	        do Memory.poke(memAddress+160, 960);
+	        do Memory.poke(memAddress+192, 960);
+	        do Memory.poke(memAddress+224, 960);
+	        do Memory.poke(memAddress+256, 960);
+	        do Memory.poke(memAddress+288, 960);
+	        do Memory.poke(memAddress+320, 384);
+	        do Memory.poke(memAddress+352, 384);
+	        do Memory.poke(memAddress+384, 0);
+	        do Memory.poke(memAddress+416, 0);
+	        do Memory.poke(memAddress+448, 0);
+	        do Memory.poke(memAddress+480, 0);
+        } else {    // draw player's bullet
+            do Memory.poke(memAddress+0, 0);
+	        do Memory.poke(memAddress+32, 0);
+	        do Memory.poke(memAddress+64, 0);
+	        do Memory.poke(memAddress+96, 0);
+	        do Memory.poke(memAddress+128, 384);
+	        do Memory.poke(memAddress+160, 384);
+	        do Memory.poke(memAddress+192, 960);
+	        do Memory.poke(memAddress+224, 960);
+	        do Memory.poke(memAddress+256, 960);
+	        do Memory.poke(memAddress+288, 960);
+	        do Memory.poke(memAddress+320, 960);
+	        do Memory.poke(memAddress+352, 960);
+	        do Memory.poke(memAddress+384, 960);
+	        do Memory.poke(memAddress+416, 0);
+	        do Memory.poke(memAddress+448, 0);
+	        do Memory.poke(memAddress+480, 0);
+        }
+        return;
+    }
+
+    method void move () {
+        do remove();
+
+        if(enemy){  // enemy's bullet moves downwards
+            let location = location + Constant.STEP();
+        } else {    // player's bullet moves upwards
+            let location = location - Constant.STEP();
+        }
+
+        do draw();
+        return;
+    }
+
+    method void remove (){
+        var int memAddress;
+        let memAddress = 16384 + location;
+        do Memory.poke(memAddress+96, 0);
+        do Memory.poke(memAddress+128, 0);
+	    do Memory.poke(memAddress+160, 0);
+	    do Memory.poke(memAddress+192, 0);
+	    do Memory.poke(memAddress+224, 0);
+	    do Memory.poke(memAddress+256, 0);
+	    do Memory.poke(memAddress+288, 0);
+	    do Memory.poke(memAddress+320, 0);
+	    do Memory.poke(memAddress+352, 0);
+    	do Memory.poke(memAddress+384, 0);
+        return;
+    }
+
+    method void dispose() {
+        do remove();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method int get_loc(){
+        return location;
+    }
+
+    method boolean is_at_boundary() {
+        if((location > Constant.DOWN_LOC_BDY() ) | (location < Constant.UP_LOC_BDY())){
+            return true;
+        }
+        return false;
+    }
+
+    function void dispose_all(){
+        var int i;
+        var Bullet bullet;
+
+        let i = 0;
+        while(i < enemy_len){       // dispose enemy bullets
+            let bullet = enemy_bullets[i];
+            if(~(bullet=null)){
+                do bullet.dispose();
+            }
+            let i = i + 1;
+        }
+
+        do enemy_bullets.dispose();
+
+        let i = 0;
+        while(i < mine_len){        // dispose player's bullets
+            let bullet = my_bullets[i];
+            if(~(bullet=null)){
+                do bullet.dispose();
+            }
+            let i = i + 1;
+        }
+
+        do my_bullets.dispose();
+        return;
+    }
+
+    function void init_bullets(int n){
+        let mine_len = n;
+        let enemy_len = n;
+        let mine_num = 0;
+        let enemy_num = 0;
+        let enemy_bullets = Array.new(n);
+        do Utility.set_0(enemy_bullets, n);
+        let my_bullets = Array.new(n);
+        do Utility.set_0(my_bullets, n);
+        return ;
+    }
+
+    function void remove_ith(int i, boolean enemy){ // remove the ith bullet from enemy/player's bullets
+        var Bullet bullet;
+        if(enemy){
+            let bullet = enemy_bullets[i];
+            let enemy_bullets[i] = null;
+            let enemy_num = enemy_num - 1;
+        } else {
+            let bullet = my_bullets[i];
+            let my_bullets[i] = null;
+            let mine_num = mine_num - 1;
+        }
+
+        do bullet.dispose();
+        return;
+    }
+
+    function void move_one_group(Array bullets, int len, boolean enemy) {
+        var Bullet bullet;
+        var int i;
+
+        let i = 0;
+        while(i < len) {
+            let bullet = bullets[i];
+            if(~(bullet=null)){
+                if(bullet.is_at_boundary()){  // if the bullet is at the boundary, remove it
+                    do Bullet.remove_ith(i, enemy);
+                } else {                    // else, move it
+                    do bullet.move();
+                }
+            }
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    function void move_group() { // move all the bullets
+        do Bullet.move_one_group(enemy_bullets, enemy_len, true);
+        do Bullet.move_one_group(my_bullets, mine_len, false); 
+        return;
+    }
+
+    function void add_bullet(int loc, boolean enemy){ // if there is capacity, find a place and store the new bullet
+        var Array a;
+        var int i, len;
+        var Bullet bullet;
+        let i = 0;
+        
+        if (enemy){
+            if(~(enemy_num < enemy_len) ){  // no capacity
+                return;
+            }
+            let a = enemy_bullets;
+            let bullet = Bullet.new(loc, true);
+            let enemy_num = enemy_num + 1;
+            let len = enemy_len;
+        } else {
+            if(~(mine_num < mine_len) ){  // no capacity
+                return;
+            }
+            let a = my_bullets;
+            let bullet = Bullet.new(loc, false);
+            let mine_num = mine_num + 1;
+            let len = mine_len;
+        }
+
+        while(i < len) {  // find an available position and put the new bullet in 
+            if(a[i]=null){
+                let a[i] = bullet;
+                return;
+            }
+            let i = i + 1;
+        }
+
+        return;
+    }
+
+    function int get_enemy_len(){
+        return enemy_len;
+    }
+
+    function int get_mine_len(){
+        return mine_len;
+    }
+
+    function Array get_enemy_bullets(){
+        return enemy_bullets;
+    }
+
+    function Array get_my_bullets(){
+        return my_bullets;
+    }
+}

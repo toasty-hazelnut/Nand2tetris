@@ -1,0 +1,44 @@
+class Constant {    // record constants used in the program
+    // we divide the screen into 16 * 32  16-bit * 16-bit squares
+    // and use location to refer to the relative memory address of the first 16-bit of each square. For example:
+    // 0    1   2   3 ...
+    // 512  513 514 515 ...
+    // 1024 1025 1026 1027 ...
+    // ...
+    
+    function int SPACE(){   // space key
+        return 32;
+    }
+
+    function int RIGHT () { // right arrow
+        return 132;
+    }
+
+    function int LEFT () { // left arrow
+        return 130;
+    }
+
+    function int E () {     // key 'e', exit
+        return 69;
+    }
+
+    function int STEP(){ // the difference between the addresses of two rows of 16-bit * 16-bit squares
+        return 512;
+    }
+
+    function int RIGHT_BDY(){  // right boundary for the screen comprised of 16*32 squares
+        return 31;
+    }
+
+    function int DOWN_BDY(){  // downward boundary for the screen comprised of 16*32 squares
+        return 15;
+    }
+
+    function int UP_LOC_BDY(){ // upward location boundary
+        return 32;
+    }
+
+    function int DOWN_LOC_BDY(){ // downward location boundary
+        return 7679;
+    }
+}

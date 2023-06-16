@@ -1,0 +1,97 @@
+class Game {
+    field boolean exit;
+    field boolean end;
+    field boolean win;
+    field Falcon falcon;
+
+    constructor Game new() {
+        let falcon = Falcon.new();
+        do Alien.init_alien_group(2, 6);    // init aliens, 2 rows and 6 columns
+
+        // init bullets, the maximum number of bullets on the screen is 20, 10 each for player's bullets and aliens' bullets. 
+        do Bullet.init_bullets(10);         
+
+        let exit = false;
+        let end = false;
+        let win = false;
+        return this;
+    }
+
+    method void dispose() {
+        do falcon.dispose();
+        do Bullet.dispose_all();
+        do Alien.dispose_all();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+
+    method String start() {
+        var char key;
+        var char prev_key;
+        var boolean lose, ret;
+        var int r;
+        let prev_key = 0;
+        
+        do Sys.wait(2000);
+
+        while ((~ exit) & (~end)) { // whlie the player doesn't choose to exit, or the game doesn't end
+            let key = Keyboard.keyPressed();
+            if(key = Constant.E()) {    // exit
+                let exit = true;
+            } else {
+                let lose = CheckCollision.bullets_falcon(falcon);   // check collisions
+                do CheckCollision.aliens_bullets();
+
+                do Alien.aliens_fire();                             // aliens fire randomly
+
+                do Bullet.move_group();                             // bullets move
+
+                let ret =  Alien.move_group();                      // aliens move
+                if(ret) {
+                    let lose = ret;
+                }
+
+                if(lose) {  // if the falcon get hit, or the aliens arrive at the bottom, the player loses
+                    let end = true;
+                    let win = false;
+                }
+
+                if((key=Constant.SPACE()) & ~(key=prev_key)){       // falcon fires
+                    do falcon.fire();
+                } else {
+                    if( (key=Constant.RIGHT()) | (key=Constant.LEFT()) ) {  // falcon moves
+                        do falcon.move(key);
+                    }
+                }
+
+                do Sys.wait(250);       // delay the next while loop
+
+                do check_end();
+                if(end) {
+                    do Screen.clearScreen();
+                    if(win){
+                        return "You win!"; 
+                    } else {
+                        return "You lose!";
+                    }
+                }                
+            }
+
+            let prev_key = key;
+        }
+
+        return "Exited";
+    }
+
+    method void check_end(){        // check if the game ends
+        if(Alien.get_num() < 1){    // if there are 0 aliens, then the player wins
+            // win
+            let end = true;
+            let win =  true;
+            return;
+        }
+        return;
+    }
+
+}
